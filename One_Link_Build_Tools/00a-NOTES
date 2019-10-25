@@ -1,0 +1,23 @@
+SUDOERS FILE
+/etc/sudoers.d/boyd
+
+%domain^admins ALL=(ALL) ALL
+%grp_bgc_it_sysops_elevated ALL=(ALL) ALL
+%grp_it_security ALL=(ALL) ALL
+svc_ansible ALL=(ALL) NOPASSWD: ALL
+svc_cyberarkrec ALL=(ALL) NOPASSWD: ALL
+svc_qualys ALL=(ALL) NOPASSWD: ALL
+=========================================
+
+PAM Authentication
+If AD accounts are having issues logging in, but local users do not, it may be the PAM Auth.
+If the auth log is showing PAM authentication failures
+
+pam-auth-update --force
+Text UI
+Select:
+PBIS
+Unix Authentication
+Register user sessions in the systemd control group hierarchy
+Create home directory on login 
+=========================================

@@ -1,0 +1,242 @@
+IMPORTANT NOTES:
+-ENSURE SYSTEM HOSTNAME IS "OneLinkSRV"
+-UPDATE IP CONFIG SECTION TO REFLECT IP SETTINGS
+-----------------------------------------
+
+Table of Contents
+1)  Image to VM (OneLinkSRV-ESX5.5-16.04.3LTS-Java8-MySQL5.7-base2)
+2)  Configure OS
+3)  Join Domain
+4)  Install Required Software
+5)  Fix Expected Vulnerabilities
+
+==========
+INSTALL OS
+==========
+1)  Install disc image to VM (OneLinkSRV-ESX5.5-16.04.3LTS-Java8-MySQL5.7-base2.iso)
+1a) SYSTEM HOSTNAME MUST BE "OneLinkSRV" in order for scripts to work properly.
+
+============
+CONFIGURE OS
+============
+2)  Set IP (edit /etc/network/interfaces)
+2a) "sudo nano /etc/network/interfaces"
+2b) make necessary network address modifications to IP, subnet, broadcast and gateway
+2c) ctrl+o, enter to save changes
+2d) "service networking restart"
+
+2)  Set Hostname
+2a) "sudo nano /etc/hostname"
+2b) Enter new hostname and save.  Changes will take place upon reboot or relog
+2c) ctrl+o, enter to save changes
+
+2)  Set Timezone
+2a) "timedatectl" to check current settings
+2b) "timedatectl set-timezone {timezone}" to change timezone
+2c) We will be using the following zones:
+    PDT: US/Pacific
+    MDT: US/Mountain
+    CDT: US/Central
+    EDT: US/Eastern
+2d) "timedatectl list-timezones" to see other options
+
+================
+JOIN BOYD DOMAIN
+================
+3)  Install AD (pbis)
+Do these steps as root in the /root directory
+  "sudo su -"
+
+Install PBIS:
+  Set file to executable:
+  "chmod +x /root/pbis-open-8.8.0.506.linux.x86_64.deb.sh"
+  Install pbis by typing:
+  "./pbis-open-8.8.0.506.linux.x86_64.deb.sh"
+
+Set configuration options:
+  /opt/pbis/bin/config UserDomainPrefix "BOYD"
+  /opt/pbis/bin/config AssumeDefaultDomain "true"
+  /opt/pbis/bin/config HomeDirTemplate "%H/%U"
+  /opt/pbis/bin/config RemoteHomeDirTemplate "%H/%U"
+  /opt/pbis/bin/config HomeDirUmask "077"
+  /opt/pbis/bin/config LoginShellTemplate "/bin/bash"
+  /opt/pbis/bin/config Local_HomeDirTemplate "%H/%U"
+  /opt/pbis/bin/config Local_HomeDirUmask "077"
+
+Check configuration options:
+  /opt/pbis/bin/config --show UserDomainPrefix
+  /opt/pbis/bin/config --show AssumeDefaultDomain
+  /opt/pbis/bin/config --show HomeDirTemplate
+  /opt/pbis/bin/config --show RemoteHomeDirTemplate
+  /opt/pbis/bin/config --show HomeDirUmask
+  /opt/pbis/bin/config --show LoginShellTemplate
+  /opt/pbis/bin/config --show Local_HomeDirTemplate
+  /opt/pbis/bin/config --show Local_HomeDirUmask
+
+Join system to domain:
+  /opt/pbis/bin/domainjoin-cli boyd.local accountwithrightstojoindomain
+
+If you need to leave domain:
+  /opt/pbis/bin/domainjoin-cli leave
+
+https://community.spiceworks.com/how_to/80336-join-ubuntu-14-04lts-to-a-windows-domain-using-pbis-open
+
+================================
+ADD QUALYS USER TO SUDOERS FOR SCANNING
+================================
+4)  "vi /etc/sudoers"
+4a) add svc_qualys to look like the following
+4b) # User privilege specification
+    root    ALL=(ALL:ALL) ALL
+    svc_qualys ALL=(ALL:ALL) ALL
+
+================================
+INSTALL REQUIRED SYSTEM SOFTWARE
+================================
+4)  Install Crowdstrike (falcon-sensor*.deb)
+4a) "sudo dpkg -i falcon-sensor_4.13.0-5803_amd64.deb"
+4b) "sudo /opt/CrowdStrike/falconctl -s --cid=5144C1AF465E49D2879AB70D86C4AE5A-05"
+4c) "service falcon-sensor start"
+4d) "ps -ef | grep falcon"
+
+Uninstall:
+In case you ever need to uninstall CSF, you'll need to do a full purge in order to
+ensure that all config files are also removed.
+apt-get purge falcon-sensor
+----------------------------------------------------------------------------------
+4)  Point syslogs to QRadar server
+4a) "sudo nano /etc/rsyslog.d/99-qradar.conf"
+4b) *.* @10.200.8.13:514
+4c) ctrl+o, enter to save changes
+4d) "service rsyslog restart"
+----------------------------------------------------------------------------------
+4)  Install SolarWinds Agent (from SolarWinds server)
+4a) Contact SW admins to have them install SW agent into server.
+----------------------------------------------------------------------------------
+4)  Add to Linux_Servers OU
+4a) Contact Systems Engineering to have them install server into OU.
+4b) [we will be adding this to our domainjoin command to eliminate this step]
+----------------------------------------------------------------------------------
+
+======================
+FIRST SCAN VULNERABILITIES
+======================
+These first three fixes are the ONLY vuln4+s after a clean image install using the ATI Ubuntu disc.
+
+===================
+Samba permissions:
+===================
+-Modify /etc/samba/smb.conf
+-Section:  'how unsuccessful authentication attempts are mapped to anonymous connections'
+-Line: 120, end of section
+map to guest = Never
+restrict anonymous = 2
+
+These two commands will apply fix:
+  "sed -i 's/map to guest = bad user/map to guest = Never\n   restrict anonymous = 2/g' /etc/samba/smb.conf"
+  "service restart smbd"
+
+#restrict anonymous explanation:
+#When set to 0, user and group list information is returned to anyone who asks. When set to 1, only an authenticated user can retrieve user and group list information. For the value 2, supported by Windows 2000/XP and Samba, no anonymous connections are allowed at all. This can break third party and Microsoft applications which expect to be allowed to perform operations anonymously.
+
+===================
+Modify postfix:
+===================
+-Disable SSL
+  "sed -i 's/smtpd_use_tls=yes/smtpd_use_tls=no/g' /etc/postfix/main.cf
+  "service postfix restart"
+
+===================
+Upgrade Java:
+===================
+Upgrade Java to a newer version.  211 is included in our installation package.
+
+===================
+Post One Link Install Scan
+===================
+These vulnerabilities appear after ATI installs the One Link application
+
+
+
+
+
+
+===================
+===================
+POSSIBLE ISSUES AND FIXES:
+===================
+===================
+Fixes for possible issues we've encountered during random tweaks.
+These should no longer be issues, but leaving them in here just in case.
+
+===================
+Modify Java:
+===================
+##THIS IS NO LONGER AN ISSUE IN VERSION {FIND THIS VERSION FROM ATI AND UPDATE}
+
+#THIS WILL NOT WORK.  THE -D CODE IS HARD CODED INTO ONELINK'S PROGRAM FILES.
+-Create ssl.prperties file in /opt/onelink/etc
+echo javax.net.ssl.keyStore=/opt/onelink/etc/client.ks > /opt/onelink/etc/ssl.properties
+echo javax.net.ssl.keyStorePassword=onelink >> /opt/onelink/etc/ssl.properties
+echo javax.net.ssl.trustStore=/opt/onelink/etc/client.ts >> /opt/onelink/etc/ssl.properties
+echo javax.net.ssl.trustStorePassword=onelink >> /opt/onelink/etc/ssl.properties
+
+Add the following command to the JMX RMI instance
+-Dcom.sun.management.jmxremote.ssl.config.file=/opt/onelink/etc/ssl.properties
+
+Test by running the following and look for the login/pass of 'onelink'
+ps -ef | grep 'javax.net.ssl.keyStorePassword'
+ps -ef | grep 'javax.net.ssl.trustStorePassword'
+ps -ef | grep 'ssl.keyStorePassword'
+
+===================
+Modify SNMP:
+===================
+"sudo nano /etc/snmp/snmpd.conf"
+set '-rocommunity' to read:
+-rocommunity private
+ctrl+o, enter to save
+"service snmpd restart"
+
+(not sure if this is necessary)
+add createUser information to /etc/snmp/snmpd.conf
+agentAddress udp:161,udp6:[::1]:161
+
+===================
+QRadar/rsyslog:
+===================
+We've had SOME issues with the setup of our servers where QRadar is seeing the wrong hostname.  This seems to happen most when there are servers being moved around.
+To ensure that hostnames are being reported properly, we can make the following change:
+
+Modify /etc/rsyslog.conf
+"sudo nano /etc/rsyslog.conf"
+Add the following as the first line:
+$LocalHostName correct_hostname
+ctrl+o, enter to save
+"service syslog restart"
+
+===================
+NOTES:
+===================
+
+-If we NEED TLS, this is how we secure it.  (by default we just disable it)
+
+Qualys QID 38142 - SSL Server Allows Anonymous Authentication Vulnerability Fix
+https://community.qualys.com/docs/DOC-1097
+
+main.cf
+# TLS parameters
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_use_tls=yes
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtpd_tls_mandatory_ciphers = high
+smtpd_tls_mandatory_exclude_ciphers = aNULL
+smtpd_tls_security_level = encrypt
+smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1
+
+Command line test
+openssl s_client -connect localhost:25 -cipher aNULL -starttls smtp
+Should see a handshake error
+
