@@ -85,13 +85,13 @@ else
 fi
 if
  [[ $yesno = $newdev ]]; then
-	echo ",,83" |sfdisk -q $newdev &>/tmp/diskextend.txt
+	echo ",,8e" |sfdisk -q $newdev &>/tmp/diskextend.txt
 echo "Creating PV for $newprt"
 	pvcreate $newprt
 echo "Extending Volume Group for /dev/$rootvg by $newprt"
 	vgextend /dev/$rootvg $newprt
 echo "Extending LV for /dev/$rootvg/$rootlv"
-	lvextend -l +100$FREE /dev/$rootvg/$rootlv
+	lvextend -l +100%FREE /dev/$rootvg/$rootlv
 #echo "LVchange for /dev/$rootvg/$rootlv"
 	lvm lvchange -a y /dev/$rootvg/$rootlv
 #echo "Growing /dev/$rootvg/$rootlv with xfs_growfs"
