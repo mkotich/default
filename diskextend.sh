@@ -1,9 +1,12 @@
-# Linux Disk Extension Script v1.0
+# Linux Disk Extension Script v1.01
 # Matt Kotich - 7/19/2022
 # matt@kotich.com
 #
 # This script will require you to ADD A NEW DRIVE to vCenter.
 # This script does not work with EXTENDING an existing drive.
+#
+# If you need to remove safety prompts for automation, find
+# the 'safety' variable and change it from 'on' to 'off'.
 #
 # This script will perform the following steps on a server:
 # 1)  Scan /dev for sdX files (scsi drives) and loop those
@@ -32,6 +35,7 @@ fi
 #SCRIPT VARIABLES
 #Do not chang these unless you know what you are doing.
 #################
+safety="on" #change on to off here to eliminate the safety check further down in this script.
 newdev=`for i in \`ls /dev/sd?\`;do fdisk -l $i|echo "$i" \`grep -c "Disk identifier"\`|grep 0|awk '{print $1}';done`
 newprt="$newdev"1
 newprtsize=`fdisk -l|tail -n5|head -n1|awk '{print $3$4}'|sed -e s/,//`
@@ -52,6 +56,11 @@ else
 		exit 0
 fi
 
+#still trying to figure out how to nest the safety switch.
+#ran out of time for today.  will fix later.
+if [[ $safety == "on" ]]
+        then
+
 #WARNINGS
 echo "Does the below information look correct?"
 echo "a) HDD space should be what you're expecting to see"
@@ -70,10 +79,14 @@ if [ -z "$yesno" ]
 		echo "Input cannot be blank."
 		exit 0
 fi
+else
+        echo "Safety has been disabled, continuing."
+        yesno=$newdev
+fi
 if
  [[ $yesno = $newdev ]]; then
 	echo ",,83" |sfdisk -1 $newdev &>/tmp/diskextend.txt
-echo "Creating PV for $newprt
+echo "Creating PV for $newprt"
 	pvcreate $newprt
 echo "Extending Volume Group for /dev/$rootvg by $newprt"
 	vgextend /dev/$rootvg $newprt
