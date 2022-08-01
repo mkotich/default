@@ -85,7 +85,7 @@ else
 fi
 if
  [[ $yesno = $newdev ]]; then
-	echo ",,83" |sfdisk -1 $newdev &>/tmp/diskextend.txt
+	echo ",,83" |sfdisk -q $newdev &>/tmp/diskextend.txt
 echo "Creating PV for $newprt"
 	pvcreate $newprt
 echo "Extending Volume Group for /dev/$rootvg by $newprt"
