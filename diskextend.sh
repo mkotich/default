@@ -56,8 +56,7 @@ else
 		exit 0
 fi
 
-#still trying to figure out how to nest the safety switch.
-#ran out of time for today.  will fix later.
+#Safety Switch -- if this variable is set to off, the script will continue unprompted until it completes.
 if [[ $safety == "on" ]]
         then
 
