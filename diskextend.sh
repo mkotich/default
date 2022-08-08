@@ -35,7 +35,7 @@ fi
 #SCRIPT VARIABLES
 #Do not chang these unless you know what you are doing.
 #################
-safety="on" #change on to off here to eliminate the safety check further down in this script.
+safety="on" #change on to off here to eliminate the safety check further down in this script.  This will be useful for automation.
 newdev=`for i in \`ls /dev/sd?\`;do fdisk -l $i|echo "$i" \`grep -c "Disk identifier"\`|grep 0|awk '{print $1}';done`
 newprt="$newdev"1
 newprtsize=`fdisk -l|tail -n5|head -n1|awk '{print $3$4}'|sed -e s/,//`
