@@ -1,4 +1,4 @@
-# Linux Disk Extension Script v1.01
+# Linux Disk Extension Script v1.02
 # Matt Kotich - 7/19/2022
 # matt@kotich.com
 #
@@ -98,6 +98,6 @@ echo "Extending LV for /dev/$rootvg/$rootlv"
 	echo ""
 	echo "HDD has been extended to" `df -h /|tail -n1|awk '{print $2}'`
 else
-	echo "Dying, then."
+	echo "Invalid Device Name Entered.  Device should read as \"/dev/sdX\""
 	exit
 fi
